@@ -1,4 +1,5 @@
 """ Training script for steps_with_decay policy"""
+from __future__ import division
 
 import argparse
 import os
@@ -26,7 +27,7 @@ from datasets.roidb import combined_roidb_for_training
 from roi_data.loader import RoiDataLoader, MinibatchSampler, BatchSampler, collate_minibatch
 from modeling.model_builder import Generalized_RCNN
 from utils.detectron_weight_helper import load_detectron_weight
-from utils.logging import setup_logging
+from utils.log import setup_logging
 from utils.timer import Timer
 from utils.training_stats import TrainingStats
 
@@ -152,6 +153,12 @@ def main():
 
     if args.dataset == "coco2017":
         cfg.TRAIN.DATASETS = ('coco_2017_train',)
+        cfg.MODEL.NUM_CLASSES = 81
+    elif args.dataset == "coco2014":
+        cfg.TRAIN.DATASETS = ('coco_2014_train',)
+        cfg.MODEL.NUM_CLASSES = 81
+    elif args.dataset == "cocoval2014":
+        cfg.TRAIN.DATASETS = ('coco_2014_val',)
         cfg.MODEL.NUM_CLASSES = 81
     elif args.dataset == "keypoints_coco2017":
         cfg.TRAIN.DATASETS = ('keypoints_coco_2017_train',)

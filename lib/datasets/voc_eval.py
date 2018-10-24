@@ -21,6 +21,7 @@
 # --------------------------------------------------------
 
 """Python implementation of the PASCAL VOC devkit's AP evaluation code."""
+from __future__ import division
 
 from six.moves import cPickle
 import logging

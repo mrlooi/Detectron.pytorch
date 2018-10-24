@@ -2,6 +2,8 @@
 
 CUDA_PATH=/usr/local/cuda/
 
+#alias python=python3
+
 python setup.py build_ext --inplace
 rm -rf build
 

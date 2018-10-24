@@ -1,4 +1,5 @@
 """Functional interface"""
+from __future__ import division
 
 
 def group_norm(x, num_groups, weight=None, bias=None, eps=1e-5):

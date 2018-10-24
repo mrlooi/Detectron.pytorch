@@ -1,4 +1,5 @@
 """Perform inference on one or more datasets."""
+from __future__ import division
 
 import argparse
 import cv2

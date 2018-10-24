@@ -1,3 +1,5 @@
+from __future__ import division
+
 from functools import wraps
 import importlib
 import logging
@@ -70,7 +72,7 @@ def check_inference(net_func):
 
 class Generalized_RCNN(nn.Module):
     def __init__(self):
-        super().__init__()
+        super(Generalized_RCNN, self).__init__()
 
         # For cache
         self.mapping_to_detectron = None

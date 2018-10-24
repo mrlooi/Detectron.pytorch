@@ -1,5 +1,6 @@
 """Parameter initialization functions
 """
+from __future__ import division
 
 import math
 import operator

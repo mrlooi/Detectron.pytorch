@@ -1,3 +1,5 @@
+from __future__ import division
+
 import numpy as np
 from torch import nn
 
@@ -37,7 +39,7 @@ class CollectAndDistributeFpnRpnProposalsOp(nn.Module):
         [labels, bbox_targets, bbox_inside_weights, bbox_outside_weights].
     """
     def __init__(self):
-        super().__init__()
+        super(CollectAndDistributeFpnRpnProposalsOp, self).__init__()
 
     def forward(self, inputs, roidb, im_info):
         """

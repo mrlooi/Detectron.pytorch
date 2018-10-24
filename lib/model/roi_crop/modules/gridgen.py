@@ -1,3 +1,5 @@
+from __future__ import division
+
 from torch.nn.modules.module import Module
 import torch
 from torch.autograd import Variable
