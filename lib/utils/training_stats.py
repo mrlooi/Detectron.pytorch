@@ -27,8 +27,8 @@ import datetime
 import numpy as np
 
 from core.config import cfg
-from utils.log import log_stats
-from utils.log import SmoothedValue
+from utils.logging import log_stats
+from utils.logging import SmoothedValue
 from utils.timer import Timer
 import utils.net as nu
 
