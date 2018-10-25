@@ -1,5 +1,5 @@
 """ Training script for steps_with_decay policy"""
-from __future__ import division
+from __future__ import division, absolute_import
 
 import argparse
 import os
@@ -27,7 +27,7 @@ from datasets.roidb import combined_roidb_for_training
 from roi_data.loader import RoiDataLoader, MinibatchSampler, BatchSampler, collate_minibatch
 from modeling.model_builder import Generalized_RCNN
 from utils.detectron_weight_helper import load_detectron_weight
-from utils.log import setup_logging
+from utils.logging import setup_logging
 from utils.timer import Timer
 from utils.training_stats import TrainingStats
 
