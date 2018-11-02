@@ -25,7 +25,7 @@ from core.test import im_detect_all
 from modeling.model_builder import Generalized_RCNN
 # import datasets.dummy_datasets as datasets
 # import utils.misc as misc_utils
-import utils.net as net_utils
+# import utils.net as net_utils
 import pycocotools.mask as mask_util
 
 # import utils.vis as vis_utils
@@ -48,6 +48,15 @@ def parse_args():
 
     return args
 
+def load_ckpt(model, ckpt):
+    """Load checkpoint"""
+    mapping, _ = model.detectron_weight_mapping
+    state_dict = {}
+    for name in ckpt:
+        if mapping[name]:
+            state_dict[name] = ckpt[name]
+    model.load_state_dict(state_dict, strict=False)
+
 if __name__ == '__main__':
     import glob
 
@@ -58,27 +67,21 @@ if __name__ == '__main__':
     cfg.MODEL.NUM_CLASSES = 81
     assert_and_infer_cfg()
 
-    maskRCNN = Generalized_RCNN()
+    from maskrcnn import MaskRCNN
+    maskRCNN = MaskRCNN()
+    # maskRCNN = Generalized_RCNN()
+    model = maskRCNN
     maskRCNN.cuda()
 
     if args.load_ckpt:
         load_name = args.load_ckpt
         checkpoint = torch.load(load_name, map_location=lambda storage, loc: storage)
-        net_utils.load_ckpt(maskRCNN, checkpoint['model'])
+        load_ckpt(maskRCNN, checkpoint['model'])
 
     maskRCNN = mynn.DataParallel(maskRCNN, cpu_keywords=['im_info', 'roidb'],
                              minibatch=True, device_ids=[0])  # only support single GPU
     maskRCNN.eval()
 
-    # imglist = glob.glob(args.image_dir + "/*.jpg")
-    # num_images = len(imglist)
-
-    # for i in xrange(num_images):
-    #     print('img', i)
-    #     im = cv2.imread(imglist[i])
-    #     assert im is not None
-
-    #     cls_boxes, cls_segms, cls_keyps = im_detect_all(maskRCNN, im)
     img_file = "demo/sample_images/img1.jpg"
     img = cv2.imread(img_file)
     cls_boxes, cls_segms, cls_keyps = im_detect_all(maskRCNN, img)

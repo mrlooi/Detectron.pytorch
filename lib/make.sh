@@ -60,3 +60,12 @@ nvcc -c -o roi_align_kernel.cu.o roi_align_kernel.cu \
 	 -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC $CUDA_ARCH
 cd ../
 python build.py
+
+
+cd ../../
+cd model/hough_voting/src
+echo "Compiling hough voting kernels by nvcc..."
+nvcc -I /usr/local/lib/python2.7/dist-packages/tensorflow/include -c -o hough_voting_kernel.cu.o hough_voting_kernel.cu \
+	 -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC $CUDA_ARCH -std=c++11
+cd ../
+python build.py
