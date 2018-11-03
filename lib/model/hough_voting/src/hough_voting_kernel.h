@@ -1,6 +1,9 @@
 #ifndef _HOUGH_VOTING_KERNEL
 #define _HOUGH_VOTING_KERNEL
 
+#define VERTEX_CHANNELS 3
+#define MAX_ROI 128
+
 #ifdef __cplusplus
 extern "C" {
 #endif

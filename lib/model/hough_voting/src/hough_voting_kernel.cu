@@ -10,18 +10,23 @@
 #include <thrust/device_vector.h>
 #include <thrust/copy.h>
 #include <thrust/extrema.h>
+#include <cuda_runtime.h>
 
 #include "hough_voting_kernel.h"
 #include "hough_voting_cuda_utils.h"
 
 
-#define VERTEX_CHANNELS 3
-#define MAX_ROI 128
-
 #define CUDA_1D_KERNEL_LOOP(i, n)                            \
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; \
        i += blockDim.x * gridDim.x)
 
+ // CUDA: various checks for different function calls.
+#define CUDA_CHECK(condition) \
+  /* Code block avoids redefinition of cudaError_t error */ \
+  do { \
+    cudaError_t error = condition; \
+    CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
+  } while (0)
 
 __global__ void compute_arrays_kernel(const int nthreads, const int* labelmap,
     int* arrays, int* array_size, const int height, const int width) 
@@ -210,7 +215,26 @@ __global__ void compute_rois_kernel(const int nthreads, float* top_box, float* t
     float bb_height = hough_data[offset + 1];
     float bb_width = hough_data[offset + 2];
 
-    if (is_train)
+    if (!is_train)
+    {
+      int roi_index = atomicAdd(num_rois, 1);
+      top_box[roi_index * 7 + 0] = batch_index;
+      top_box[roi_index * 7 + 1] = cls;
+      top_box[roi_index * 7 + 2] = x - bb_width * (0.5 + scale);
+      top_box[roi_index * 7 + 3] = y - bb_height * (0.5 + scale);
+      top_box[roi_index * 7 + 4] = x + bb_width * (0.5 + scale);
+      top_box[roi_index * 7 + 5] = y + bb_height * (0.5 + scale);
+      top_box[roi_index * 7 + 6] = max_hs_idx;
+      
+      top_pose[roi_index * 7 + 0] = 1;
+      top_pose[roi_index * 7 + 1] = 0;
+      top_pose[roi_index * 7 + 2] = 0;
+      top_pose[roi_index * 7 + 3] = 0;
+      top_pose[roi_index * 7 + 4] = rx * bb_distance;
+      top_pose[roi_index * 7 + 5] = ry * bb_distance;
+      top_pose[roi_index * 7 + 6] = bb_distance;
+    }
+    else
     {
       int roi_index = atomicAdd(num_rois, 9);
       top_box[roi_index * 7 + 0] = batch_index;
@@ -354,51 +378,8 @@ __global__ void compute_rois_kernel(const int nthreads, float* top_box, float* t
       top_box[roi_index * 7 + 5] = top_box[roi_index * 7 + 3] + hh;
       top_box[roi_index * 7 + 6] = max_hs_idx;
     }
-    else
-    {
-      int roi_index = atomicAdd(num_rois, 1);
-      top_box[roi_index * 7 + 0] = batch_index;
-      top_box[roi_index * 7 + 1] = cls;
-      top_box[roi_index * 7 + 2] = x - bb_width * (0.5 + scale);
-      top_box[roi_index * 7 + 3] = y - bb_height * (0.5 + scale);
-      top_box[roi_index * 7 + 4] = x + bb_width * (0.5 + scale);
-      top_box[roi_index * 7 + 5] = y + bb_height * (0.5 + scale);
-      top_box[roi_index * 7 + 6] = max_hs_idx;
-      
-      top_pose[roi_index * 7 + 0] = 1;
-      top_pose[roi_index * 7 + 1] = 0;
-      top_pose[roi_index * 7 + 2] = 0;
-      top_pose[roi_index * 7 + 3] = 0;
-      top_pose[roi_index * 7 + 4] = rx * bb_distance;
-      top_pose[roi_index * 7 + 5] = ry * bb_distance;
-      top_pose[roi_index * 7 + 6] = bb_distance;
-    }
   }
 }
-
-template <typename T>
-struct device_ptr_deleter {
-    void operator()(T* ptr) {
-        CUDA_CHECK(cudaFree(ptr));
-    }
-};
-
-template <typename T>
-struct host_ptr_deleter {
-    void operator()(T* ptr) {
-        CUDA_CHECK(cudaFreeHost(ptr));
-    }
-};
-
-template <typename T>
-// using unique_ptr_device = unique_ptr_temp<T, decltype(device_ptr_deleter<T>)>;
-// decltype(device_ptr_deleter<T>)>;
-using unique_ptr_device = std::unique_ptr<T[], device_ptr_deleter<T>>;
-
-// template <typename T>
-// // using unique_ptr_host = unique_ptr_temp<T, decltype(host_ptr_deleter<T>)>;
-// // using unique_ptr_host = std::unique_ptr<T[], decltype(host_ptr_deleter<T>)>;
-// using unique_ptr_host = std::unique_ptr<T[], host_ptr_deleter<T>>;
 
 int HoughVotingForwardLaucher(
     const int* labelmap, const float* vertmap, const float* extents, const float* meta_data, const float* gt,
@@ -411,7 +392,6 @@ int HoughVotingForwardLaucher(
   cudaError_t err;
 
   int output_size = height * width;
-  printf("OUTPUT SIZE\n");
 
   // step 1: compute a label index array for each class
   int dims = num_classes * height * width;
@@ -420,7 +400,7 @@ int HoughVotingForwardLaucher(
 
   // unique_ptr_device<int> arrays_vec;
   // cudaMalloc(arrays_vec, dims * sizeof(int));
-  int* arrays; // = arrays_vec.get();
+  int* arrays;// = arrays_vec.get();
   cudaMalloc((void **)&arrays, dims * sizeof(int));
 
   // thrust::device_vector<int> array_sizes_vec(num_classes);
@@ -428,7 +408,7 @@ int HoughVotingForwardLaucher(
 
   // unique_ptr_device<int> array_sizes_vec;
   // cudaMalloc(array_sizes_vec, num_classes * sizeof(int));
-  int* array_sizes; // = array_sizes_vec.get();  
+  int* array_sizes;// = array_sizes_vec.get();  
   cudaMalloc((void **)&array_sizes, num_classes * sizeof(int));
 
   cudaMemset(array_sizes, 0, num_classes * sizeof(int));
@@ -455,7 +435,7 @@ int HoughVotingForwardLaucher(
     }
   }
 
-  if (count >= 0)
+  if (count == 0)
   {
     printf("RETURN\n");
     cudaFree(arrays);
@@ -463,8 +443,9 @@ int HoughVotingForwardLaucher(
     return 1;
   }
 
-  thrust::device_vector<int> class_indexes_vec(count);
-  int* class_indexes = thrust::raw_pointer_cast(class_indexes_vec.data());
+  // thrust::device_vector<int> class_indexes_vec(count);
+  int* class_indexes;// = thrust::raw_pointer_cast(class_indexes_vec.data());
+  cudaMalloc((void **)&class_indexes, count * sizeof(int));
   cudaMemcpy(class_indexes, &class_indexes_host[0], count * sizeof(int), cudaMemcpyHostToDevice);
 
   err = cudaGetLastError();
@@ -475,13 +456,15 @@ int HoughVotingForwardLaucher(
   }
 
   // step 2: compute the hough space
-  thrust::device_vector<float> hough_space_vec(count * height * width);
-  float* hough_space = thrust::raw_pointer_cast(hough_space_vec.data());
+  // thrust::device_vector<float> hough_space_vec(count * height * width);
+  float* hough_space; // = thrust::raw_pointer_cast(hough_space_vec.data());
+  cudaMalloc((void **)&hough_space, count * height * width * sizeof(float));
   if (cudaMemset(hough_space, 0, count * height * width * sizeof(float)) != cudaSuccess)
     fprintf(stderr, "reset error\n");
 
-  thrust::device_vector<float> hough_data_vec(count * height * width * 3);
-  float* hough_data = thrust::raw_pointer_cast(hough_data_vec.data());
+  // thrust::device_vector<float> hough_data_vec(count * height * width * 3);
+  float* hough_data; // = thrust::raw_pointer_cast(hough_data_vec.data());
+  cudaMalloc((void **)&hough_data, count * height * width * 3 * sizeof(float));
   if (cudaMemset(hough_data, 0, count * height * width * 3 * sizeof(float)) != cudaSuccess)
     fprintf(stderr, "reset error\n");
 
@@ -500,14 +483,17 @@ int HoughVotingForwardLaucher(
   }
 
   // step 3: find the maximum in hough space
-  thrust::device_vector<int> num_max_vec(1);
-  int* num_max = thrust::raw_pointer_cast(num_max_vec.data());
+  // thrust::device_vector<int> num_max_vec(1);
+  int* num_max; // = thrust::raw_pointer_cast(num_max_vec.data());
+  cudaMalloc((void **)&num_max, sizeof(int));
   if (cudaMemset(num_max, 0, sizeof(int)) != cudaSuccess)
     fprintf(stderr, "reset error\n");
 
-  int index_size = MAX_ROI / batch_size;
-  thrust::device_vector<int> max_indexes_vec(index_size);
-  int* max_indexes = thrust::raw_pointer_cast(max_indexes_vec.data());
+  // printf("num_rois_host %d\n", num_rois_host);
+  int index_size = (MAX_ROI - *num_rois) / (batch_size - batch_index);
+  // thrust::device_vector<int> max_indexes_vec(index_size);
+  int* max_indexes; // = thrust::raw_pointer_cast(max_indexes_vec.data());
+  cudaMalloc((void **)&max_indexes, index_size * sizeof(int));
   if (cudaMemset(max_indexes, 0, index_size * sizeof(int)) != cudaSuccess)
     fprintf(stderr, "reset error\n");
 
@@ -542,19 +528,22 @@ int HoughVotingForwardLaucher(
   // step 4: compute outputs
   int num_max_host;
   cudaMemcpy(&num_max_host, num_max, sizeof(int), cudaMemcpyDeviceToHost);
-  if (num_max_host >= index_size)
-    num_max_host = index_size;
+  num_max_host = std::min(num_max_host, index_size);
 
   printf("num_max: %d\n", num_max_host);
   if (num_max_host > 0)
   {
     output_size = num_max_host;
-    // compute_rois_kernel<<<(output_size + kThreadsPerBlock - 1) / kThreadsPerBlock,
-    //                      kThreadsPerBlock, 0, stream>>>(
-    //     output_size, top_box, top_pose, top_target, top_weight, top_domain,
-    //     extents, meta_data, gt, hough_space, hough_data, max_indexes, class_indexes,
-    //     is_train, batch_index, height, width, num_classes, num_gt, num_rois);
+    if (cudaMemset(num_max, 0, sizeof(int)) != cudaSuccess)
+      fprintf(stderr, "reset error\n");
+    compute_rois_kernel<<<(output_size + kThreadsPerBlock - 1) / kThreadsPerBlock,
+                         kThreadsPerBlock, 0, stream>>>(
+        output_size, top_box, top_pose, top_target, top_weight, top_domain,
+        extents, meta_data, gt, hough_space, hough_data, max_indexes, class_indexes,
+        is_train, batch_index, height, width, num_classes, num_gt, num_max);
     cudaThreadSynchronize();
+    cudaMemcpy(&num_max_host, num_max, sizeof(int), cudaMemcpyDeviceToHost);
+    *num_rois += num_max_host;
   }
   
   // err checking
@@ -564,6 +553,14 @@ int HoughVotingForwardLaucher(
     fprintf( stderr, "cudaCheckError() failed compute outputs: %s\n", cudaGetErrorString( err ) );
     exit( -1 );
   }
+
+  cudaFree(arrays);
+  cudaFree(array_sizes);
+  cudaFree(class_indexes);
+  cudaFree(hough_space);
+  cudaFree(hough_data);
+  cudaFree(num_max);
+  cudaFree(max_indexes);
 
   return 1;
 }

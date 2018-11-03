@@ -1,6 +1,8 @@
 #ifndef _HOUGH_VOTING_CUDA_UTILS
 #define _HOUGH_VOTING_CUDA_UTILS
 
+#define EIGEN_USE_GPU
+
 // TODO: remove eigen 
 #include <Eigen/Geometry> 
 

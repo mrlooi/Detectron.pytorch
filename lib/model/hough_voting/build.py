@@ -4,17 +4,16 @@ import torch
 from torch.utils.ffi import create_extension
 
 
-sources = ['src/hough_voting.c']
-headers = ['src/hough_voting.h']
+sources = []#'src/hough_voting.c']
+headers = []#'src/hough_voting.h']
 defines = []
-with_cuda = False
+with_cuda = torch.cuda.is_available()
 
-if torch.cuda.is_available():
+if with_cuda:
     print('Including CUDA code.')
     sources += ['src/hough_voting_cuda.c']
     headers += ['src/hough_voting_cuda.h']
     defines += [('WITH_CUDA', None)]
-    with_cuda = True
 
 this_file = os.path.dirname(os.path.realpath(__file__))
 print(this_file)

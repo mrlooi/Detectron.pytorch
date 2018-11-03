@@ -1,7 +1,4 @@
 
-import sys
-# sys.path.append("..")
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -33,7 +30,7 @@ class HoughNet(nn.Module):
 
         im_scale = 1
 
-        root_dir = "/home/vincent/Documents/deep_learning/PoseCNN/data"
+        root_dir = "/home/vincent/Documents/py/ml/PoseCNN/data"
         # extents blob
         extent_file = root_dir + "/LOV/extents.txt"
         extents = np.zeros((self.num_classes, 3), dtype=np.float32)
@@ -77,10 +74,17 @@ class HoughNet(nn.Module):
             poses = poses.cuda()
             mdata = mdata.cuda()
 
-        self.forward(label_2d, vertex_pred, extents, poses, mdata)
+        hough_outputs = self.forward(label_2d, vertex_pred, extents, poses, mdata)[:4]
+        return hough_outputs
 
 USE_CUDA = 1
 
 model = HoughNet()
-model.test(is_cuda=USE_CUDA)
+hough_outputs = model.test(is_cuda=USE_CUDA)
+rois, poses_init, poses_target, poses_weight = hough_outputs
 
+# import sys
+# sys.path.append("../..")
+
+# from utils import boxes
+# boxes.nms(rois, 0.5)

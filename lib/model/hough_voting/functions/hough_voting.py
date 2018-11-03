@@ -29,17 +29,27 @@ class HoughVotingFunction(Function):
         assert(extents.size()[0] == ctx.num_classes)
         # print(batch_size, data_height, data_width)
 
-        # output = features.new(num_rois, num_channels, ctx.pooled_height, ctx.pooled_width).zero_()
+        # float tensors
+        top_box = vertex_pred.new()
+        top_pose = vertex_pred.new()
+        top_target = vertex_pred.new()
+        top_weight = vertex_pred.new()
+
+        # int tensors
+        top_domain = label_2d.new()  
 
         if label_2d.is_cuda:
+            # hough_voting.allocate_outputs(top_box, top_pose, top_target, top_weight, top_domain, num_rois, ctx.num_classes);
             hough_voting.hough_voting_forward_cuda(label_2d, vertex_pred, extents, meta_data, poses, 
                 ctx.num_classes,
                 ctx.is_train, ctx.inlier_threshold, ctx.label_threshold, ctx.threshold_vote, ctx.threshold_percentage, 
-                ctx.skip_pixels)
+                ctx.skip_pixels, 
+                top_box, top_pose, top_target, top_weight, top_domain
+                )
         else:
             raise NotImplementedError("Hough Voting Forward CPU layer not implemented!")
 
-        return label_2d
+        return top_box, top_pose, top_target, top_weight, top_domain
 
     def backward(ctx, grad_output):
         raise NotImplementedError("Hough Voting Backward layer not implemented!")        
