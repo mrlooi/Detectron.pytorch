@@ -1,6 +1,6 @@
 from torch.nn.modules.module import Module
-# from ..functions.hough_voting import HoughVotingFunction
-from functions.hough_voting import HoughVotingFunction
+from ..functions.hough_voting import HoughVotingFunction
+# from functions.hough_voting import HoughVotingFunction
 
 class HoughVoting(Module):
     def __init__(self, num_classes, threshold_vote, threshold_percentage, label_threshold=500, inlier_threshold=0.9, skip_pixels=1, is_train=False):

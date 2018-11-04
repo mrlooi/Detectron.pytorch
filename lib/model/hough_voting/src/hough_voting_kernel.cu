@@ -508,7 +508,7 @@ int HoughVotingForwardLaucher(
   else
   {
     std::vector<int> max_indexes_host(count);
-    memset(&max_indexes_host[0], 0, count * sizeof(int));
+    // memset(&max_indexes_host[0], 0, count * sizeof(int));
     for (int i = 0; i < count; i++)
     {
       float *hmax = thrust::max_element(thrust::device, hough_space + i * height * width, hough_space + (i+1) * height * width);

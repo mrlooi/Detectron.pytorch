@@ -1,15 +1,7 @@
 import torch
 from torch.autograd import Function
-# from .._ext import hough_voting
-from _ext import hough_voting
-
-# import pdb
-
-# int hough_voting_forward_cuda(THCudaIntTensor* labelmap, THCudaTensor* vertmap, THCudaTensor* extents, THCudaTensor* meta_data, THCudaTensor* gt,
-#     const int num_classes, 
-#     const int is_train, const float inlierThreshold, const int labelThreshold, const float votingThreshold, const float perThreshold, 
-#     const int skip_pixels
-#     )
+from .._ext import hough_voting
+# from _ext import hough_voting
 
 class HoughVotingFunction(Function):
     def __init__(ctx, num_classes, threshold_vote, threshold_percentage, label_threshold, inlier_threshold, skip_pixels=1, is_train=False):
@@ -36,11 +28,12 @@ class HoughVotingFunction(Function):
         top_weight = vertex_pred.new()
 
         # int tensors
-        top_domain = label_2d.new()  
 
         if label_2d.is_cuda:
+            label_2d_int = label_2d.type(torch.cuda.IntTensor) if label_2d.type() != 'torch.cuda.IntTensor' else label_2d
+            top_domain = label_2d_int.new()  
             # hough_voting.allocate_outputs(top_box, top_pose, top_target, top_weight, top_domain, num_rois, ctx.num_classes);
-            hough_voting.hough_voting_forward_cuda(label_2d, vertex_pred, extents, meta_data, poses, 
+            hough_voting.hough_voting_forward_cuda(label_2d_int, vertex_pred, extents, meta_data, poses, 
                 ctx.num_classes,
                 ctx.is_train, ctx.inlier_threshold, ctx.label_threshold, ctx.threshold_vote, ctx.threshold_percentage, 
                 ctx.skip_pixels, 
@@ -49,6 +42,7 @@ class HoughVotingFunction(Function):
         else:
             raise NotImplementedError("Hough Voting Forward CPU layer not implemented!")
 
+        # top_box is rois, which is shape (N, 7): batch_index, cls, x1, y1, x2, y2, max_hough_idx
         return top_box, top_pose, top_target, top_weight, top_domain
 
     def backward(ctx, grad_output):

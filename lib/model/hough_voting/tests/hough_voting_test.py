@@ -2,7 +2,8 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from modules.hough_voting import HoughVoting
+
+from ..modules.hough_voting import HoughVoting
 
 FT = torch.FloatTensor
 
@@ -10,8 +11,8 @@ class HoughNet(nn.Module):
     def __init__(self):
         super(HoughNet, self).__init__()
 
-        self.is_train = False
         self.num_classes = 22
+        self.is_train = False
         self.vote_threshold = -1.0
         self.vote_percentage = 0.02
         self.skip_pixels = 20
@@ -43,9 +44,9 @@ class HoughNet(nn.Module):
         K = np.matrix(meta_data['intrinsic_matrix']) * im_scale
         K[2, 2] = 1
         Kinv = np.linalg.pinv(K)
-        mdata = np.zeros(48, dtype=np.float32)
-        mdata[0:9] = K.flatten()
-        mdata[9:18] = Kinv.flatten()
+        mdata = np.zeros((1,48), dtype=np.float32)
+        mdata[:,0:9] = K.flatten()
+        mdata[:,9:18] = Kinv.flatten()
 
         # label_2d blob
         label_2d_file = root_dir + "/demo_images/000005-label2d.npy"
@@ -59,11 +60,11 @@ class HoughNet(nn.Module):
 
         # vertex_pred = np.transpose(vertex_pred, [0,2,3,1])
 
-        label_2d = torch.IntTensor(label_2d)
+        label_2d = torch.LongTensor(label_2d)#.type(torch.IntTensor)
         # label_2d = FT(label_2d)
         vertex_pred = FT(vertex_pred)
         extents = FT(extents)
-        poses = torch.ones(len(label_2d), 13)
+        poses = torch.zeros(len(label_2d), 13)
         mdata = FT(mdata)
 
         print(label_2d.shape, vertex_pred.shape, extents.shape, poses.shape, mdata.shape)
@@ -77,14 +78,16 @@ class HoughNet(nn.Module):
         hough_outputs = self.forward(label_2d, vertex_pred, extents, poses, mdata)[:4]
         return hough_outputs
 
-USE_CUDA = 1
+if __name__ == '__main__': # run with ipython -i -m hough_voting.tests.hough_voting_test 
 
-model = HoughNet()
-hough_outputs = model.test(is_cuda=USE_CUDA)
-rois, poses_init, poses_target, poses_weight = hough_outputs
+    USE_CUDA = 1
 
-# import sys
-# sys.path.append("../..")
+    model = HoughNet()
+    hough_outputs = model.test(is_cuda=USE_CUDA)
+    rois, poses_init, poses_target, poses_weight = hough_outputs
 
-# from utils import boxes
-# boxes.nms(rois, 0.5)
+    # import sys
+    # sys.path.append("../..")
+
+    # from utils import boxes
+    # boxes.nms(rois, 0.5)

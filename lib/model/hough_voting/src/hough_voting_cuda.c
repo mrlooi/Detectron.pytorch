@@ -10,7 +10,7 @@ extern THCState *state;
 int resize_outputs(THCudaTensor* top_box, THCudaTensor* top_pose, THCudaTensor* top_target, THCudaTensor* top_weight, 
     THCudaIntTensor* top_domain, const int num_rois, const int num_classes)
 {
-    THCudaTensor_resize2d(state, top_box, num_rois, 7);
+    THCudaTensor_resize2d(state, top_box, num_rois, 7);  // batch_index, cls, x1, y1, x2, y2, max_hough_idx
     THCudaTensor_resize2d(state, top_pose, num_rois, 7);
     THCudaTensor_resize2d(state, top_target, num_rois, 4 * num_classes);
     THCudaTensor_resize2d(state, top_weight, num_rois, 4 * num_classes);
