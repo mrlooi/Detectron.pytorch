@@ -9,7 +9,7 @@ extern THCState *state;
 
 int average_distance_loss_forward_cuda(THCudaTensor* poses_pred, THCudaTensor* poses_target, THCudaTensor* poses_weight, 
     THCudaTensor* points, THCudaTensor* symmetry, const int num_classes, const int num_points, const float margin,
-    THCudaTensor* top_data
+    THCudaTensor* loss, THCudaTensor* bottom_diff
 )
 {
     // Grab the input tensor
@@ -19,8 +19,8 @@ int average_distance_loss_forward_cuda(THCudaTensor* poses_pred, THCudaTensor* p
     const float* points_flat = THCudaTensor_data(state, points);
     const float* symmetry_flat = THCudaTensor_data(state, symmetry);
 
-    float* top_data_flat = THCudaTensor_data(state, top_data); 
-    float* bottom_diff;
+    float* loss_flat = THCudaTensor_data(state, loss); 
+    float* bottom_diff_flat = THCudaTensor_data(state, bottom_diff); ;
 
     int batch_size = THCudaTensor_size(state, poses_pred, 0);
 
@@ -29,7 +29,7 @@ int average_distance_loss_forward_cuda(THCudaTensor* poses_pred, THCudaTensor* p
     AveragedistanceForwardLaucher(    
         poses_pred_flat, poses_target_flat, poses_weight_flat, points_flat, symmetry_flat, 
         batch_size, num_classes, num_points, margin,
-        top_data_flat, bottom_diff, stream
+        loss_flat, bottom_diff_flat, stream
     );
 
     return 1;

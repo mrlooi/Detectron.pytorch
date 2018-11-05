@@ -11,21 +11,23 @@ class AverageDistanceLossFunction(Function):
     def forward(ctx, poses_pred, poses_target, poses_weight, points, symmetry): 
         assert(points.size()[0] == symmetry.size()[0] == ctx.num_classes)
 
-        ctx.poses_pred_size = poses_pred.size()           
-        num_rois, cn = ctx.poses_pred_size
+        poses_pred_size = poses_pred.size()           
+        num_rois, cn = poses_pred_size
         num_pts = points.size()[1]
 
-        # assert(cn == ctx.num_classes * 4)
+        assert(cn == ctx.num_classes * 4)
+        # batch_sz, cn = poses_pred.size()[0]
 
         loss = poses_pred.new(1).zero_()
+        bottom_diff = poses_pred.new(*poses_pred_size).zero_()
 
         if poses_pred.is_cuda:
             average_distance_loss.average_distance_loss_forward_cuda(poses_pred, poses_target, poses_weight, points, symmetry, 
-                ctx.num_classes, num_pts, ctx.margin, loss)
+                ctx.num_classes, num_pts, ctx.margin, loss, bottom_diff)
         else:
             raise NotImplementedError("Average Distance Loss Forward CPU layer not implemented!")
 
-        return loss 
+        return loss, bottom_diff
 
     def backward(ctx, grad_output):
         raise NotImplementedError("Average Distance Loss Backward layer not implemented!")        
