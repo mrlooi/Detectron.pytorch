@@ -36,4 +36,4 @@ class AverageDistanceLossFunction(Function):
         bd = ctx.bottom_diff
         grad_input = bd.new(*bd.size()).zero_()
         average_distance_loss.average_distance_loss_backward_cuda(grad_output, bd, grad_input);
-        return None, None
+        return grad_input, None, None, None, None
