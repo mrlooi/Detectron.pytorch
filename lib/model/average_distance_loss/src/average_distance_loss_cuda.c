@@ -35,9 +35,17 @@ int average_distance_loss_forward_cuda(THCudaTensor* poses_pred, THCudaTensor* p
     return 1;
 }
 
-// int hough_voting_backward_cuda(int pooled_height, int pooled_width, float spatial_scale,
-//                         THCudaTensor * top_grad, THCudaTensor * rois, THCudaTensor * bottom_grad, THCudaIntTensor * argmax)
-// {
+int average_distance_loss_backward_cuda(THCudaTensor* top_diff, THCudaTensor* bottom_diff, THCudaTensor* output)
+{
+    const float* top_diff_flat = THCudaTensor_data(state, top_diff);    
+    const float* bottom_diff_flat = THCudaTensor_data(state, bottom_diff);
+    float* output_flat = THCudaTensor_data(state, output);
 
-//     return 1;
-// }
+    int batch_size = THCudaTensor_size(state, bottom_diff, 0);
+    int channels = THCudaTensor_size(state, bottom_diff, 1);
+    cudaStream_t stream = THCState_getCurrentStream(state);
+
+    AveragedistanceBackwardLaucher(top_diff_flat, bottom_diff_flat, batch_size, channels, output_flat, stream);
+
+    return 1;
+}
