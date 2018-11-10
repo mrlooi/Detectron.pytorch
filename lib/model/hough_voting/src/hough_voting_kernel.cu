@@ -430,14 +430,14 @@ int HoughVotingForwardLaucher(
     if (array_sizes_host[c] > labelThreshold)
     {
       class_indexes_host[count] = c;
-      printf("Class %d) %d (labels count: %d)\n", c, count, array_sizes_host[c]);
+      // printf("Class %d) %d (labels count: %d)\n", c, count, array_sizes_host[c]);
       count++;
     }
   }
 
   if (count == 0)
   {
-    printf("RETURN\n");
+    // printf("RETURN\n");
     cudaFree(arrays);
     cudaFree(array_sizes);
     return 1;
@@ -513,7 +513,7 @@ int HoughVotingForwardLaucher(
     {
       float *hmax = thrust::max_element(thrust::device, hough_space + i * height * width, hough_space + (i+1) * height * width);
       max_indexes_host[i] = hmax - hough_space;
-      printf("Max indexes %d) %d\n", i, max_indexes_host[i]);
+      // printf("Max indexes %d) %d\n", i, max_indexes_host[i]);
     }
     cudaMemcpy(num_max, &count, sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(max_indexes, &max_indexes_host[0], count * sizeof(int), cudaMemcpyHostToDevice);
@@ -530,7 +530,7 @@ int HoughVotingForwardLaucher(
   cudaMemcpy(&num_max_host, num_max, sizeof(int), cudaMemcpyDeviceToHost);
   num_max_host = std::min(num_max_host, index_size);
 
-  printf("num_max: %d\n", num_max_host);
+  // printf("num_max: %d\n", num_max_host);
   if (num_max_host > 0)
   {
     output_size = num_max_host;
