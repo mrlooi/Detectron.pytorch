@@ -33,4 +33,4 @@ if __name__ == '__main__': # run with ipython -i -m average_distance_loss.tests.
     ave_dist_loss_op = AverageDistanceLoss(num_classes, margin)
     loss = ave_dist_loss_op(fpp, fpt, fpw, fpts, symm)
     loss.backward()
-    print(loss.grad)
+    print(fpp.grad)

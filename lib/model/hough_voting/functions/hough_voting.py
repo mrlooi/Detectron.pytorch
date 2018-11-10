@@ -16,7 +16,10 @@ class HoughVotingFunction(Function):
         ctx.is_train = is_train
 
     def forward(ctx, label_2d, vertex_pred, extents, poses, meta_data): 
-        ctx.label_size = label_2d.size()           
+        ctx.label_2d = label_2d
+        ctx.vertex_pred = vertex_pred
+        ctx.label_size = label_2d.size()        
+
         batch_size, data_height, data_width = ctx.label_size
         assert(extents.size()[0] == ctx.num_classes)
         # print(batch_size, data_height, data_width)
@@ -45,9 +48,11 @@ class HoughVotingFunction(Function):
         # top_box is rois, which is shape (N, 7): batch_index, cls, x1, y1, x2, y2, max_hough_idx
         return top_box, top_pose, top_target, top_weight, top_domain
 
-    def backward(ctx, grad_output):
-        raise NotImplementedError("Hough Voting Backward layer not implemented!")        
-        # hough_voting.hough_voting_backward_cuda(ctx.pooled_height, ctx.pooled_width, ctx.spatial_scale,
-        #                                       grad_output, ctx.rois, grad_input, ctx.argmax)
+    def backward(ctx, grad, tmp, tmp1, tmp2, _):  # 5 outputs in forward pass, 5 "gradients" needed in backward pass argument
+        """
+        No gradients in hough layer
+        """
+        g_lab = ctx.label_2d.new(*ctx.label_2d.size()).zero_()
+        g_vp = ctx.vertex_pred.new(*ctx.vertex_pred.size()).zero_()
 
-        return None, None
+        return g_lab, g_vp, None, None, None
