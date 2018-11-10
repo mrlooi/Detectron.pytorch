@@ -1,6 +1,5 @@
 from torch.nn.modules.module import Module
-from ..functions.hough_voting import HardLabelFunction
-# from functions.hough_voting import HardLabelFunction
+from ..functions.hard_label import HardLabelFunction
 
 class HardLabel(Module):
     def __init__(self, threshold):
