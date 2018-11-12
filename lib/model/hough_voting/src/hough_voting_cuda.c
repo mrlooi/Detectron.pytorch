@@ -81,6 +81,10 @@ int hough_voting_forward_cuda(THCudaIntTensor* labelmap, THCudaTensor* vertmap, 
             top_box_data, top_pose_data, top_target_data, top_weight_data, top_domain_data, &num_rois, stream);
     }
 
+    // dummy output
+    if (num_rois == 0)
+        num_rois = 1;
+
     // then resize outputs based on num_rois
     // printf("num_rois: %d\n", num_rois);
     resize_outputs(top_box, top_pose, top_target, top_weight, top_domain, num_rois, num_classes);
