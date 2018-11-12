@@ -22,7 +22,7 @@ class AverageDistanceLossFunction(Function):
         bottom_diff = poses_pred.new(*poses_pred_size).zero_()
 
         ctx.bottom_diff = bottom_diff
-
+        
         if poses_pred.is_cuda:
             average_distance_loss.average_distance_loss_forward_cuda(poses_pred, poses_target, poses_weight, points, symmetry, 
                 ctx.num_classes, num_pts, ctx.margin, loss, bottom_diff)

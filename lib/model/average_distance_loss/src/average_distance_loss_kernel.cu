@@ -375,6 +375,11 @@ int AveragedistanceForwardLaucher(
     exit( -1 );
   }
 
+  checkCuda(cudaFree(losses));
+  checkCuda(cudaFree(loss_batch));
+  checkCuda(cudaFree(diffs));
+  checkCuda(cudaFree(rotations));
+
   return 1;
 }
 
