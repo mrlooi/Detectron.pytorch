@@ -490,10 +490,14 @@ int HoughVotingForwardLaucher(
     fprintf(stderr, "reset error\n");
 
   // printf("num_rois_host %d\n", num_rois_host);
-  int index_size = (MAX_ROI - *num_rois) / (batch_size - batch_index);
+  int cur_rois = *num_rois;
+  if (is_train)
+    cur_rois /= 9;
+  int index_size = (MAX_ROI - cur_rois) / (batch_size - batch_index);
   // thrust::device_vector<int> max_indexes_vec(index_size);
   int* max_indexes; // = thrust::raw_pointer_cast(max_indexes_vec.data());
   cudaMalloc((void **)&max_indexes, index_size * sizeof(int));
+  // printf("index_size: %d, num_rois: %d, batch_size: %d, batch_index: %d\n", index_size, *num_rois, batch_size, batch_index);
   if (cudaMemset(max_indexes, 0, index_size * sizeof(int)) != cudaSuccess)
     fprintf(stderr, "reset error\n");
 
