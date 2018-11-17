@@ -7,8 +7,10 @@
 #include <math.h>
 #include <float.h>
 
-#include <thrust/device_vector.h>
-#include <thrust/copy.h>
+#include <thrust/execution_policy.h>  // for certain cuda versions, this is where 'thrust::device' is
+
+// #include <thrust/device_vector.h>
+// #include <thrust/copy.h>
 #include <thrust/extrema.h>
 #include <cuda_runtime.h>
 
