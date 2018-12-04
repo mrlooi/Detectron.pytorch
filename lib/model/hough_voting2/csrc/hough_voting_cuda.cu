@@ -50,8 +50,19 @@ __global__ void compute_hough_kernel(const int nthreads, float* hough_space, flo
     const float* vertmap, const float* extents, const float* meta_data, const int* arrays, const int* array_size, 
     const int* class_indexes, const int height, const int width, const int num_classes, const int count, const float inlierThreshold, const int skip_pixels) 
 {
+  __shared__ float s_meta_data[9];
+
   CUDA_1D_KERNEL_LOOP(index, nthreads) 
   {
+    if (threadIdx.x == 0)
+    {
+      for (int i = 0; i < 9; ++i)
+      {
+        s_meta_data[i] = meta_data[i]; 
+      }
+    }
+    __syncthreads();
+
     // (cls, cx, cy) is an element in the hough space
     int ind = index / (height * width);
     int cls = class_indexes[ind];
@@ -78,7 +89,7 @@ __global__ void compute_hough_kernel(const int nthreads, float* hough_space, flo
       // vote
       if (angle_distance(cx, cy, x, y, u, v) > inlierThreshold)
       {
-        project_box(cls, extents, meta_data, d, 0.6, &threshold);
+        project_box(cls, extents, s_meta_data, d, 0.6, &threshold);
         float dx = fabsf(x - cx);
         float dy = fabsf(y - cy);
         if (dx < threshold && dy < threshold)
@@ -110,7 +121,7 @@ __global__ void compute_hough_kernel(const int nthreads, float* hough_space, flo
         // vote
         if (angle_distance(cx, cy, x, y, u, v) > inlierThreshold)
         {
-          project_box(cls, extents, meta_data, distance, 0.6, &threshold);
+          project_box(cls, extents, s_meta_data, distance, 0.6, &threshold);
           float dx = fabsf(x - cx);
           float dy = fabsf(y - cy);
           if (dx > bb_width && dx < threshold && dy < threshold)
