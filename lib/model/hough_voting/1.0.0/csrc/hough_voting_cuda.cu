@@ -538,8 +538,8 @@ int HoughVotingForwardLaucher(
   }
   else
   {
-    std::vector<float> hough_space_host(count * height * width);
-    cudaMemcpy(&hough_space_host[0], hough_space, count * height * width * sizeof(float), cudaMemcpyDeviceToHost);
+    // std::vector<float> hough_space_host(count * height * width);
+    // cudaMemcpy(&hough_space_host[0], hough_space, count * height * width * sizeof(float), cudaMemcpyDeviceToHost);
 
     std::vector<int> max_indexes_host(count);
     // memset(&max_indexes_host[0], 0, count * sizeof(int));
@@ -547,7 +547,7 @@ int HoughVotingForwardLaucher(
     {
       float *hmax = thrust::max_element(thrust::device, hough_space + i * height * width, hough_space + (i+1) * height * width);
       max_indexes_host[i] = hmax - hough_space;
-      printf("Max indexes %d) %d, value: %.3f\n", i, max_indexes_host[i], hough_space_host[max_indexes_host[i]]);
+      printf("Max indexes %d) %d\n", i, max_indexes_host[i]);
     }
     cudaMemcpy(num_max, &count, sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(max_indexes, &max_indexes_host[0], count * sizeof(int), cudaMemcpyHostToDevice);

@@ -33,27 +33,33 @@ def get_data(num_classes):
     # mdata[:,9:18] = Kinv.flatten()
     # mdata = K.flatten()
 
+    base_file = root_dir + "/LOV/data/0002/000001-"
+    img_file = base_file + "color.png"
+    img = cv2.imread(img_file)
+
     # label_2d blob
     # label_2d_file = root_dir + "/demo_images/000005-label2d.npy"
-    label_2d_file = root_dir + "/LOV/data/0002/000001-label2d_mrcnn.npy"
+    label_2d_file = base_file + "label2d_mrcnn.npy"
     label_2d = np.load(label_2d_file)
 
     # vertex pred blob
     # vertex_pred_file = root_dir + "/demo_images/000005-vert_pred.npy"
-    vertex_pred_file = root_dir + "/LOV/data/0002/000001-vert_pred_mrcnn.npy"
+    vertex_pred_file = base_file + "vert_pred_mrcnn.npy"
     vertex_pred = np.load(vertex_pred_file)
     vertex_pred = np.transpose(vertex_pred, [0,2,3,1])
     assert label_2d.shape == vertex_pred.shape[:3]
     assert vertex_pred.shape[-1] == num_classes * 3
 
-    poses = np.zeros((len(label_2d), 13))
+    # poses = np.zeros((len(label_2d), 13))
+    poses_pred_file = base_file + "poses_mrcnn.npy" 
+    poses = np.load(poses_pred_file)
 
     # vertex_pred = np.transpose(vertex_pred, [0,2,3,1])
     # label_2d = np.tile(label_2d, (2,1,1,1))
     # vertex_pred = np.tile(vertex_pred, (2,1,1,1))
     # is_train = False
 
-    return label_2d, vertex_pred, extents, poses, mdata
+    return img, label_2d, vertex_pred, extents, poses, mdata
 
 class HoughNet(nn.Module):
     def __init__(self):
@@ -102,7 +108,7 @@ if __name__ == '__main__': # run with ipython -i -m hough_voting.tests.hough_vot
     model = HoughNet()
     model.cuda()
     model.eval()
-    label_2d, vertex_pred, extents, poses, mdata = get_data(model.num_classes)
+    img, label_2d, vertex_pred, extents, poses, mdata = get_data(model.num_classes)
 
     label_2d = IT(label_2d)#, True)#.type(torch.IntTensor)
     # label_2d = FT(label_2d)
@@ -119,8 +125,6 @@ if __name__ == '__main__': # run with ipython -i -m hough_voting.tests.hough_vot
     # "to verify backward pass, run this"
     # poses_target.sum().backward()
     # assert np.sum(vertex_pred.grad.detach().cpu().numpy()) == 0
-
-    img = cv2.imread("/home/bot/Documents/deep_learning/PoseCNN/data/LOV/data/0002/000001-color.png")
 
     rois = rois.detach().cpu().numpy()
     RED = (0,0,255)
