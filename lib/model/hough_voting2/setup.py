@@ -1,11 +1,11 @@
 import torch
-import tensorflow as tf
+# import tensorflow as tf
 from setuptools import setup
 from torch.utils.cpp_extension import CppExtension, CUDA_HOME, CUDAExtension, BuildExtension
 
 sources = ['csrc/hough_voting_binds.cpp']
 source_cuda = ['csrc/hough_voting_cuda.cu']
-include_dirs = ['csrc', tf.sysconfig.get_include()]  # custom include dir here
+include_dirs = ['csrc']#, tf.sysconfig.get_include()]  # custom include dir here
 define_macros = []
 extra_compile_args = {"cxx": []}
 

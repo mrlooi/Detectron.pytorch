@@ -13,20 +13,21 @@ def IT(x, req_grad=False):
 def get_data(num_classes):
 
     root_dir = "/home/vincent/Documents/deep_learning/PoseCNN/data"
-    # extents blob
-    extent_file = root_dir + "/LOV/extents.txt"
-    extents = np.zeros((num_classes, 3), dtype=np.float32)
-    extents[1:, :] = np.loadtxt(extent_file)
+    # # extents blob
+    # extent_file = root_dir + "/LOV/extents.txt"
+    # extents = np.zeros((num_classes, 3), dtype=np.float32)
+    # extents[1:, :] = np.loadtxt(extent_file)
 
-    points_file = root_dir +"/../points_all_orig.npy"
+    points_file = root_dir + "/LOV/points_all_orig.npy"
     points = np.load(points_file)
+    extents = np.max(points, axis=1) - np.min(points,axis=1)
 
     # meta blob
     im_scale = 1.0
     intrinsics = np.array([[1066.778, 0, 312.9869], [0, 1067.487, 241.3109], [0.0, 0.0, 1.0]]) * im_scale
     # mdata[:,9:18] = Kinv.flatten()
 
-    base_file = root_dir + "/LOV/data/0002/000001-"
+    base_file = root_dir + "/LOV/data/0000/000001-"
     img_file = base_file + "color.png"
     img = cv2.imread(img_file)
 
@@ -41,13 +42,14 @@ def get_data(num_classes):
     # vertex pred blob
     vertex_pred_file = base_file + "vert_pred_mrcnn.npy"
     vertex_pred = np.load(vertex_pred_file)
-    vertex_pred = np.transpose(vertex_pred, [0,2,3,1])
+    # vertex_pred = np.transpose(vertex_pred, [0,2,3,1])
     assert masks.shape == vertex_pred.shape[:3]
 
     # poses = np.zeros((len(masks), 13))
     poses_pred_file = base_file + "poses_mrcnn.npy" 
     poses = np.load(poses_pred_file)
 
+    # return img, labels[:1], masks[:1], vertex_pred[:1], extents, poses[:1], intrinsics, points
     return img, labels, masks, vertex_pred, extents, poses, intrinsics, points
 
 
@@ -136,16 +138,10 @@ def run_hough_voting_OLD(T_label_2d, T_vertex_pred, T_extents, T_poses, T_intrin
 def run_hough_voting(T_labels, T_masks, T_vertex_pred, T_extents, T_poses, T_intrinsics):
     from layer.hough_voting_layer import HoughVoting
 
-    num_classes = 22
-    is_train = False
-    vote_threshold = -1.0
-    vote_percentage = 0.02
-    skip_pixels = 20
-    label_threshold = 500
+    skip_pixels = 100
     inlier_threshold = 0.9
 
-    model = HoughVoting(num_classes, threshold_vote=vote_threshold, threshold_percentage=vote_percentage, label_threshold=label_threshold, 
-        inlier_threshold=inlier_threshold, skip_pixels=skip_pixels, is_train=is_train)
+    model = HoughVoting(inlier_threshold=inlier_threshold, skip_pixels=skip_pixels)
 
     model.cuda()
     hough_outputs = model.forward(T_labels, T_masks, T_vertex_pred, T_extents, T_poses, T_intrinsics)
@@ -178,20 +174,17 @@ if __name__ == '__main__':
     hough_outputs = run_hough_voting(T_labels, T_masks, T_vertex_pred, T_extents, T_poses, T_intrinsics)
 
 
-    rois, poses_init, poses_target, poses_weight, _ = hough_outputs
+    rois, poses = hough_outputs
 
     rois = rois.detach().cpu().numpy()
-    poses_init = poses_init.detach().cpu().numpy()
+    poses = poses.detach().cpu().numpy()
 
-    sorted_idx = np.argsort(rois[:,1])  # sort assumption obv breaks if there are multi instances of same class
-    poses_init = poses_init[sorted_idx]
-    sorted_idx = np.argsort(labels)
-    poses = poses[sorted_idx]
-    poses_init[:,:4] = poses
-    final_poses = poses_init.copy()
-    final_labels = labels[sorted_idx] 
+    # sorted_idx = np.argsort(rois[:,1])  # sort assumption obv breaks if there are multi instances of same class
+    # final_poses = poses[sorted_idx]
+    # sorted_idx = np.argsort(labels)
+    # final_labels = labels[sorted_idx] 
 
     vis_rois(img, rois)
-    vis_pose(img, final_labels, final_poses, intrinsics, points)
+    vis_pose(img, labels, poses, intrinsics, points)
 
     cv2.waitKey(0)

@@ -11,16 +11,14 @@
 std::vector<at::Tensor> hough_voting_forward(
     const at::Tensor& labels, const at::Tensor& masks, const at::Tensor& vertmap, const at::Tensor& extents, 
     const at::Tensor& meta_data, const at::Tensor& poses,
-    const int num_classes, 
-    const int is_train, const float inlierThreshold, const int labelThreshold, const float votingThreshold, const float perThreshold, 
-    const int skip_pixels
+    const float inlierThreshold, const int skip_pixels
 ) 
 {
   if (masks.type().is_cuda()) 
   {
 #ifdef WITH_CUDA
-    return hough_voting_forward_cuda(labels, masks, vertmap, extents, meta_data, poses, num_classes, is_train, 
-        inlierThreshold, labelThreshold, votingThreshold, perThreshold, skip_pixels);
+    return hough_voting_forward_cuda(labels, masks, vertmap, extents, meta_data, poses,  
+        inlierThreshold, skip_pixels);
 #else
     AT_ERROR("Not compiled with GPU support");
 #endif
